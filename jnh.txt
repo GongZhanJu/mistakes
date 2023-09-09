@@ -1,0 +1,160 @@
+#大数据平台地址，无需修改
+API_BASE_URL = 'http://fireeye-test-backend-container:9090/api/'  
+#tf modelserver的地址，无需修改
+TF_SERVING_BASE_URL = 'http://fireeye-test-model-container:8501/' 
+# 根据云平台中的视觉任务实际的编号进行设置
+task_id='1ac1e8a095df4611af387d9934799251'  
+# 注意，/workspace为工作目录的根目录k
+image_dir = './image'  
+# 根据大数据平台web中的任务管理显示情况设定
+id_code_mapping = {  
+    'dbee3deebc5444f5b011da4e5518752c': '0',
+    'edb4cb51d54644c08aa122d3f041bb0a': '1'
+}
+num_images = requests.get(
+    url=API_BASE_URL+'image/count', 
+    params=dict(
+        task_id=task_id,
+        has_truth=True
+    )
+).json()
+​
+print('该任务类别下的图片数量：',num_images)
+该任务类别下的图片数量： 339
+import pprint
+​
+def get_image_records(task_id):
+    resp = requests.get(
+        url=API_BASE_URL+'image', 
+        params=dict(
+            task_id=task_id,
+            has_truth=True            
+        )
+    )
+    
+    if resp.status_code == 200:
+        return resp.json()
+    else:
+        raise RuntimeError(resp.text)
+    
+image_records=get_image_records(task_id)
+print(len(image_records))
+pprint.pprint(image_records[:2])
+339
+[{'id': 'a9e2d8fc8d1c4cf189b25a3b84aa6fbd',
+  'platform_id': '7f0d3278fa7b47968a085618bb1513b8',
+  'slot': '1',
+  'task_id': '1ac1e8a095df4611af387d9934799251',
+  'time': 1693912531.772,
+  'truth_id': 'dbee3deebc5444f5b011da4e5518752c'},
+ {'id': '8d7a4205f1d649f8887850ea4ae022d4',
+  'platform_id': '7f0d3278fa7b47968a085618bb1513b8',
+  'slot': '1',
+  'task_id': '1ac1e8a095df4611af387d9934799251',
+  'time': 1693912531.709,
+  'truth_id': 'dbee3deebc5444f5b011da4e5518752c'}]
+
+
+
+
+
+
+import os
+import requests
+from PIL import Image, ImageOps, ImageEnhance
+import numpy as np
+from sklearn.model_selection import train_test_split
+​
+​
+API_BASE_URL = 'http://fireeye-test-backend-container:9090/api/'
+image_dir = "./images"
+​
+​
+category0_dir = os.path.join(image_dir, 'Category0')
+category1_dir = os.path.join(image_dir, 'Category1')
+​
+if not os.path.exists(category0_dir):
+    os.makedirs(category0_dir)
+​
+if not os.path.exists(category1_dir):
+    os.makedirs(category1_dir)
+​
+​
+def download_image(image_id):
+    response = requests.get(f"{API_BASE_URL}image/download/{image_id}")
+    return response.content
+​
+​
+def split_data(directory):
+    all_files = [os.path.join(directory, fname) for fname in os.listdir(directory)]
+    train_files, test_files = train_test_split(all_files, test_size=0.2, random_state=42)
+    train_files, val_files = train_test_split(train_files, test_size=0.25, random_state=42)  # 0.25 x 0.8 = 0.2
+    return train_files, val_files, test_files
+​
+​
+def vertical_flip(img: Image.Image) -> Image.Image:
+    return ImageOps.flip(img)
+​
+​
+def horizontal_flip(img: Image.Image) -> Image.Image:
+    return ImageOps.mirror(img)
+​
+​
+def clip_image(img: Image.Image, target_height: int, target_width: int) -> Image.Image:
+    width, height = img.size
+    left = (width - target_width) / 2
+    top = (height - target_height) / 2
+    right = (width + target_width) / 2
+    bottom = (height + target_height) / 2
+    return img.crop((left, top, right, bottom))
+​
+​
+def normalize_image(img: Image.Image) -> np.ndarray:
+    img_array = np.array(img)
+    return img_array / 255.0
+​
+​
+​
+for record in image_records:
+    image_content = download_image(record['id'])
+    truth_id = record['truth_id']
+​
+    if id_code_mapping[truth_id] == '0':
+        file_path = os.path.join(category0_dir, f"{record['id']}.png")
+    else:
+        file_path = os.path.join(category1_dir, f"{record['id']}.png")
+​
+    with open(file_path, 'wb') as f:
+        f.write(image_content)
+​
+category0_train, category0_val, category0_test = split_data(category0_dir)
+category1_train, category1_val, category1_test = split_data(category1_dir)
+​
+​
+img = Image.open("path_to_image.jpg")
+img_vertical_flipped = vertical_flip(img)
+img_horizontal_flipped = horizontal_flip(img)
+img_clipped = clip_image(img, 200, 200)
+img_normalized = normalize_image(img)
+​
+img_vertical_flipped.save("path_to_save_vertical_flipped.jpg")
+img_horizontal_flipped.save("path_to_save_horizontal_flipped.jpg")
+img_clipped.save("path_to_save_clipped.jpg")
+​
+---------------------------------------------------------------------------
+FileNotFoundError                         Traceback (most recent call last)
+/tmp/ipykernel_15/1227087917.py in <module>
+     71 
+     72 
+---> 73 img = Image.open("path_to_image.jpg")
+     74 img_vertical_flipped = vertical_flip(img)
+     75 img_horizontal_flipped = horizontal_flip(img)
+
+/opt/conda/lib/python3.7/site-packages/PIL/Image.py in open(fp, mode, formats)
+   2951 
+   2952     if filename:
+-> 2953         fp = builtins.open(filename, "rb")
+   2954         exclusive_fp = True
+   2955 
+
+FileNotFoundError: [Errno 2] No such file or directory: 'path_to_image.jpg'

@@ -1,0 +1,100 @@
+#加载包
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import Dense, LSTM
+import matplotlib.pyplot as plt
+from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import mean_squared_error
+
+# 读取CSV文件
+data = pd.read_csv('data.csv')
+
+# 获取特征和标签列
+features = data.iloc[:, :18].values
+labels = data.iloc[:, 18].values#更换18、19、20、21、22、23、24、25分别对应补偿0-7
+
+# 对特征和标签进行归一化处理
+scaler = MinMaxScaler(feature_range=(0, 1))
+features_scaled = scaler.fit_transform(features)
+labels_scaled = labels.reshape(-1,1)
+
+# 构建训练集、验证集和测试集
+train_size = int(len(features_scaled) * 0.8)#总行数的70%为训练集
+val_size = int(len(features_scaled) * 0.15)#10%为验证集
+test_size = len(features_scaled) - train_size - val_size#剩下20%为测试集
+train_features = features_scaled[:train_size, :]
+train_labels = labels_scaled[:train_size]
+val_features = features_scaled[train_size:train_size+val_size, :]
+val_labels = labels_scaled[train_size:train_size+val_size]
+test_features = features_scaled[train_size+val_size:, :]
+test_labels = labels_scaled[train_size+val_size:]
+
+# 将数据转换为LSTM输入格式
+def create_lstm_dataset(features, labels, time_steps=1):
+    dataX, dataY = [], []
+    for i in range(len(features) - time_steps):
+        a = features[i:(i + time_steps), :]
+        dataX.append(a)
+        dataY.append(labels[i + time_steps])
+    return np.array(dataX), np.array(dataY)
+
+time_steps = 2#可调
+trainX, trainY = create_lstm_dataset(train_features, train_labels, time_steps)
+valX, valY = create_lstm_dataset(val_features, val_labels, time_steps)
+testX, testY = create_lstm_dataset(test_features, test_labels, time_steps)
+
+# 构建LSTM模型
+model = Sequential()
+model.add(LSTM(50,activation='sigmoid', input_shape=(time_steps, 18)))
+model.add(Dense(1))
+learning_rate = 0.001
+optimizer = Adam(lr=learning_rate)
+model.compile(loss='mean_squared_error', optimizer=optimizer)
+
+# 拟合模型
+history = model.fit(trainX, trainY, validation_data=(valX, valY), epochs=100, batch_size=64, verbose=1)
+train_loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+# 绘制损失曲线
+plt.plot(train_loss, label='Train Loss')
+plt.plot(val_loss, label='Validation Loss')
+plt.legend()
+plt.show()
+
+# 预测测试集
+test_predict = model.predict(testX)
+# 将预测值和真实值绘图展示
+plt.plot(test_predict, label='Predicted')
+plt.plot(testY, label='True')
+plt.legend()
+plt.show()
+
+#精度评价
+MSE = mean_squared_error(test_predict,testY)
+print ("均方误差为：", MSE)
+
+
+# 准备用于请求的数据
+req_data = json.dumps({
+    'inputs': test_features[:1].tolist()
+})
+
+# 发送请求至 TensorFlow Serving
+model_version = 3  # 修改为你的模型版本号
+response = requests.post(f'http://fireeye-test-model-container:8501/v1/models/slot0/versions/{model_version}:predict', 
+                         data=req_data,
+                         headers={"content-type": "application/json"})
+
+# 解析并输出 TensorFlow Serving 的响应
+if response.status_code != 200:
+    raise RuntimeError('Request tf-serving failed: ' + response.text)
+resp_data = json.loads(response.text)
+if 'outputs' not in resp_data or type(resp_data['outputs']) is not list:
+    raise ValueError('Malformed tf-serving response')
+
+print("TensorFlow Serving 输出:", resp_data)
+print("真实值:", test_labels[:1].tolist())
+print("均方误差：%.4f" % mean_squared_error(test_labels[:1].tolist(), resp_data['outputs']))

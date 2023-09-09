@@ -1,0 +1,29 @@
+for record in image_records:
+    image_content = download_image(record['id'])
+    truth_id = record['truth_id']
+​
+    # Note: `id_code_mapping` is not defined in the provided code.
+    # Make sure it's properly defined or replaced by appropriate logic.
+    if id_code_mapping[truth_id] == '0':
+        file_path = os.path.join(category0_dir, f"{record['id']}.png")
+    else:
+        file_path = os.path.join(category1_dir, f"{record['id']}.png")
+    try:
+        img = Image.open(io.io.BytesIO(image_content))
+        img.save(file_path, 'PNG')
+    except Exception as e:
+        print(f'Error processing image {record["id"]}. Error: {e}')
+​
+    with open(file_path, 'wb') as f:
+        f.write(image_content)
+    img.save(file_path, 'PNG')
+---------------------------------------------------------------------------
+NameError                                 Traceback (most recent call last)
+/tmp/ipykernel_9257/45025864.py in <module>
+      5     # Note: `id_code_mapping` is not defined in the provided code.
+      6     # Make sure it's properly defined or replaced by appropriate logic.
+----> 7     if id_code_mapping[truth_id] == '0':
+      8         file_path = os.path.join(category0_dir, f"{record['id']}.png")
+      9     else:
+
+NameError: name 'id_code_mapping' is not defined

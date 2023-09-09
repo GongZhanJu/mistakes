@@ -1,0 +1,40 @@
+category0_train, category0_val, category0_test = split_data(category0_dir)
+category1_train, category1_val, category1_test = split_data(category1_dir)
+​
+def move_files(file_list, target_dir):
+    for f in file_list:
+        shutil.move(f, target_dir)
+​
+# Move Category0 images
+move_files(category0_train, os.path.join(train_dir, 'Category0'))
+move_files(category0_val, os.path.join(val_dir, 'Category0'))
+move_files(category0_test, os.path.join(test_dir, 'Category0'))
+​
+# Move Category1 images
+move_files(category1_train, os.path.join(train_dir, 'Category1'))
+move_files(category1_val, os.path.join(val_dir, 'Category1'))
+move_files(category1_test, os.path.join(test_dir, 'Category1'))
+---------------------------------------------------------------------------
+Error                                     Traceback (most recent call last)
+/tmp/ipykernel_94/3149056988.py in <module>
+      7 
+      8 # Move Category0 images
+----> 9 move_files(category0_train, os.path.join(train_dir, 'Category0'))
+     10 move_files(category0_val, os.path.join(val_dir, 'Category0'))
+     11 move_files(category0_test, os.path.join(test_dir, 'Category0'))
+
+/tmp/ipykernel_94/3149056988.py in move_files(file_list, target_dir)
+      4 def move_files(file_list, target_dir):
+      5     for f in file_list:
+----> 6         shutil.move(f, target_dir)
+      7 
+      8 # Move Category0 images
+
+/opt/conda/lib/python3.7/shutil.py in move(src, dst, copy_function)
+    562         real_dst = os.path.join(dst, _basename(src))
+    563         if os.path.exists(real_dst):
+--> 564             raise Error("Destination path '%s' already exists" % real_dst)
+    565     try:
+    566         os.rename(src, real_dst)
+
+Error: Destination path './dataset/train/Category0/abb4f3be41d742329c24ffb614f5e85c_horizontal_flipped.png' already exists

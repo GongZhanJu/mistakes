@@ -1,0 +1,79 @@
+
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import Dense, LSTM
+import matplotlib.pyplot as plt
+from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import mean_squared_error
+
+
+
+data = pd.read_csv('./data.tsv',sep='\t',skipinitialspace=True)
+data.head()
+
+features = data.iloc[:, :18].values
+labels = data.iloc[:, 18].values
+
+scaler = MinMaxScaler(feature_range=(0, 1))
+features_scaled = scaler.fit_transform(features)
+labels_scaled = labels.reshape(-1,1)
+
+
+
+train_size = int(len(features_scaled) * 0.8)#总行数的70%为训练集
+val_size = int(len(features_scaled) * 0.15)#10%为验证集
+test_size = len(features_scaled) - train_size - val_size#剩下20%为测试集
+train_features = features_scaled[:train_size, :]
+train_labels = labels_scaled[:train_size]
+val_features = features_scaled[train_size:train_size+val_size, :]
+val_labels = labels_scaled[train_size:train_size+val_size]
+test_features = features_scaled[train_size+val_size:, :]
+test_labels = labels_scaled[train_size+val_size:]
+
+
+
+def create_lstm_dataset(features, labels, time_steps=1):
+    dataX, dataY = [], []
+    for i in range(len(features) - time_steps):
+        a = features[i:(i + time_steps), :]
+        dataX.append(a)
+        dataY.append(labels[i + time_steps])
+    return np.array(dataX), np.array(dataY)
+
+time_steps = 2#可调
+trainX, trainY = create_lstm_dataset(train_features, train_labels, time_steps)
+valX, valY = create_lstm_dataset(val_features, val_labels, time_steps)
+testX, testY = create_lstm_dataset(test_features, test_labels, time_steps)
+
+
+
+model = Sequential()
+model.add(LSTM(50,activation='sigmoid', input_shape=(time_steps, 18)))
+model.add(Dense(1))
+learning_rate = 0.001
+optimizer = Adam(lr=learning_rate)
+model.compile(loss='mean_squared_error', optimizer=optimizer)
+
+history = model.fit(trainX, trainY, validation_data=(valX, valY), epochs=100, batch_size=64, verbose=1)
+train_loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+
+
+plt.plot(train_loss, label='Train Loss')
+plt.plot(val_loss, label='Validation Loss')
+plt.legend()
+plt.show()
+
+
+test_predict = model.predict(testX)
+
+plt.plot(test_predict, label='Predicted')
+plt.plot(testY, label='True')
+plt.legend()
+plt.show()
+
+MSE = mean_squared_error(test_predict,testY)
+print ("均方误差为：", MSE)

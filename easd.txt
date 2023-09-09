@@ -1,0 +1,31 @@
+---------------------------------------------------------------------------
+InvalidArgumentError                      Traceback (most recent call last)
+/tmp/ipykernel_112/2371230191.py in <module>
+    101 for img_path in os.listdir(category0_dir):
+    102     full_img_path = os.path.join(category0_dir, img_path)
+--> 103     preprocess_image_from_path(full_img_path)
+    104 
+    105 # Preprocess images in Category1
+
+/tmp/ipykernel_112/2371230191.py in preprocess_image_from_path(image_path)
+     43     # Read and decode the image from the path
+     44     image = tf.io.read_file(image_path)
+---> 45     image = tf.image.decode_png(image, channels=3)
+     46 
+     47     # Apply preprocessing
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/ops/gen_image_ops.py in decode_png(contents, channels, dtype, name)
+   1289       return _result
+   1290     except _core._NotOkStatusException as e:
+-> 1291       _ops.raise_from_not_ok_status(e, name)
+   1292     except _core._FallbackException:
+   1293       pass
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/framework/ops.py in raise_from_not_ok_status(e, name)
+   7184 def raise_from_not_ok_status(e, name):
+   7185   e.message += (" name: " + name if name is not None else "")
+-> 7186   raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+   7187 
+   7188 
+
+InvalidArgumentError: Unknown image file format. One of JPEG, PNG, GIF, BMP required. [Op:DecodePng]

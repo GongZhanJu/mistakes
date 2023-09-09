@@ -1,0 +1,99 @@
+---------------------------------------------------------------------------
+TypeError                                 Traceback (most recent call last)
+/tmp/ipykernel_18/3521073879.py in <module>
+     19 
+     20 
+---> 21 train_ds = build_dataset(train_dir)
+     22 dev_ds = build_dataset(dev_dir)
+     23 test_ds = build_dataset(test_dir)
+
+/tmp/ipykernel_18/3521073879.py in build_dataset(data_dir, target, batch_size)
+     13 
+     14     ds = tf.data.Dataset.from_tensor_slices((all_images, all_labels))
+---> 15     ds = ds.map(lambda x,y: (tf.io.encode_base64(tf.io.read_file(x)) ,y))
+     16     ds = ds.shuffle(100, seed=123)
+     17     ds = ds.batch(batch_size)
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/data/ops/dataset_ops.py in map(self, map_func, num_parallel_calls, deterministic, name)
+   2014         warnings.warn("The `deterministic` argument has no effect unless the "
+   2015                       "`num_parallel_calls` argument is specified.")
+-> 2016       return MapDataset(self, map_func, preserve_cardinality=True, name=name)
+   2017     else:
+   2018       return ParallelMapDataset(
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/data/ops/dataset_ops.py in __init__(self, input_dataset, map_func, use_inter_op_parallelism, preserve_cardinality, use_legacy_function, name)
+   5193         self._transformation_name(),
+   5194         dataset=input_dataset,
+-> 5195         use_legacy_function=use_legacy_function)
+   5196     self._metadata = dataset_metadata_pb2.Metadata()
+   5197     if name:
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/data/ops/structured_function.py in __init__(self, func, transformation_name, dataset, input_classes, input_shapes, input_types, input_structure, add_to_graph, use_legacy_function, defun_kwargs)
+    269         fn_factory = trace_tf_function(defun_kwargs)
+    270 
+--> 271     self._function = fn_factory()
+    272     # There is no graph to add in eager mode.
+    273     add_to_graph &= not context.executing_eagerly()
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/eager/function.py in get_concrete_function(self, *args, **kwargs)
+   3069     """
+   3070     graph_function = self._get_concrete_function_garbage_collected(
+-> 3071         *args, **kwargs)
+   3072     graph_function._garbage_collector.release()  # pylint: disable=protected-access
+   3073     return graph_function
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/eager/function.py in _get_concrete_function_garbage_collected(self, *args, **kwargs)
+   3034       args, kwargs = None, None
+   3035     with self._lock:
+-> 3036       graph_function, _ = self._maybe_define_function(args, kwargs)
+   3037       seen_names = set()
+   3038       captured = object_identity.ObjectIdentitySet(
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/eager/function.py in _maybe_define_function(self, args, kwargs)
+   3290 
+   3291           self._function_cache.add_call_context(cache_key.call_context)
+-> 3292           graph_function = self._create_graph_function(args, kwargs)
+   3293           self._function_cache.add(cache_key, cache_key_deletion_observer,
+   3294                                    graph_function)
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/eager/function.py in _create_graph_function(self, args, kwargs, override_flat_arg_shapes)
+   3138             arg_names=arg_names,
+   3139             override_flat_arg_shapes=override_flat_arg_shapes,
+-> 3140             capture_by_value=self._capture_by_value),
+   3141         self._function_attributes,
+   3142         function_spec=self.function_spec,
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/framework/func_graph.py in func_graph_from_py_func(name, python_func, args, kwargs, signature, func_graph, autograph, autograph_options, add_control_dependencies, arg_names, op_return_value, collections, capture_by_value, override_flat_arg_shapes, acd_record_initial_resource_uses)
+   1159         _, original_func = tf_decorator.unwrap(python_func)
+   1160 
+-> 1161       func_outputs = python_func(*func_args, **func_kwargs)
+   1162 
+   1163       # invariant: `func_outputs` contains only Tensors, CompositeTensors,
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/data/ops/structured_function.py in wrapped_fn(*args)
+    246           attributes=defun_kwargs)
+    247       def wrapped_fn(*args):  # pylint: disable=missing-docstring
+--> 248         ret = wrapper_helper(*args)
+    249         ret = structure.to_tensor_list(self._output_structure, ret)
+    250         return [ops.convert_to_tensor(t) for t in ret]
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/data/ops/structured_function.py in wrapper_helper(*args)
+    175       if not _should_unpack(nested_args):
+    176         nested_args = (nested_args,)
+--> 177       ret = autograph.tf_convert(self._func, ag_ctx)(*nested_args)
+    178       if _should_pack(ret):
+    179         ret = tuple(ret)
+
+/opt/conda/lib/python3.7/site-packages/tensorflow/python/autograph/impl/api.py in wrapper(*args, **kwargs)
+    690       except Exception as e:  # pylint:disable=broad-except
+    691         if hasattr(e, 'ag_error_metadata'):
+--> 692           raise e.ag_error_metadata.to_exception(e)
+    693         else:
+    694           raise
+
+TypeError: in user code:
+
+    File "/tmp/ipykernel_18/3521073879.py", line 15, in None  *
+        lambda x,y: (tf.io.encode_base64(tf.io.read_file(x)) ,y))
+
+    TypeError: Input 'filename' of 'ReadFile' Op has type float32 that does not match expected type of string.

@@ -1,0 +1,10 @@
+---------------------------------------------------------------------------
+FileNotFoundError                         Traceback (most recent call last)
+/tmp/ipykernel_94/3690568034.py in <module>
+     13         print(f'Error processing image {record["id"]}. Error: {e}')
+     14 
+---> 15     with open(file_path, 'wb') as f:
+     16         f.write(image_content)
+     17     img.save(file_path, "PNG")
+
+FileNotFoundError: [Errno 2] No such file or directory: './images/Category0/a9e2d8fc8d1c4cf189b25a3b84aa6fbd.png'

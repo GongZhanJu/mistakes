@@ -1,0 +1,165 @@
+API_BASE_URL = 'http://fireeye-test-backend-container:9090/api/'  
+TF_SERVING_BASE_URL = 'http://fireeye-test-model-container:8501/' 
+task_id='1ac1e8a095df4611af387d9934799251'  
+image_dir = './image'  
+id_code_mapping = {  
+    'dbee3deebc5444f5b011da4e5518752c': '0',
+    'edb4cb51d54644c08aa122d3f041bb0a': '1'
+}
+num_images = requests.get(
+    url=API_BASE_URL+'image/count', 
+    params=dict(
+        task_id=task_id,
+        has_truth=True
+    )
+).json()
+​
+print('该任务类别下的图片数量：',num_images)
+该任务类别下的图片数量： 409
+import pprint
+​
+def get_image_records(task_id):
+    resp = requests.get(
+        url=API_BASE_URL+'image', 
+        params=dict(
+            task_id=task_id,
+            has_truth=True            
+        )
+    )
+    
+    if resp.status_code == 200:
+        return resp.json()
+    else:
+        raise RuntimeError(resp.text)
+    
+image_records=get_image_records(task_id)
+import requests
+from PIL import Image, ImageOps, ImageEnhance
+import numpy as np
+from sklearn.model_selection import train_test_split
+API_BASE_URL = 'http://fireeye-test-backend-container:9090/api/'
+image_dir = "./images"
+category0_dir = os.path.join(image_dir, 'Category0')
+category1_dir = os.path.join(image_dir, 'Category1')
+if not os.path.exists(category0_dir):
+    os.makedirs(category0_dir)
+​
+if not os.path.exists(category1_dir):
+    os.makedirs(category1_dir)
+def split_data(directory):
+    all_files = [os.path.join(directory, fname) for fname in os.listdir(directory)]
+    train_files, test_files = train_test_split(all_files, test_size=0.2, random_state=42)
+    train_files, val_files = train_test_split(train_files, test_size=0.25, random_state=42)  # 0.25 x 0.8 = 0.2
+    return train_files, val_files, test_files
+def download_image(image_id):
+    response = requests.get(f"{API_BASE_URL}image/download/{image_id}")
+    return response.content
+​
+def vertical_flip(img: Image.Image) -> Image.Image:
+    return ImageOps.flip(img)
+def horizontal_flip(img: Image.Image) -> Image.Image:
+    return ImageOps.mirror(img)
+def clip_image(img: Image.Image, target_height: int, target_width: int) -> Image.Image:
+    width, height = img.size
+    left = (width - target_width) / 3
+    top = (height - target_height) / 3
+    right = (width + target_width) / 5
+    bottom = (height + target_height) / 2
+    return img.crop((left, top, right, bottom))
+​
+​
+def normalize_image(img: Image.Image) -> np.ndarray:
+    img_array = np.array(img)
+    return img_array / 255.0
+def get_image_by_id(id):
+    r = requests.get(url=API_BASE_URL+'image/'+id)
+    if r.status_code == 200:
+        return PIL.Image.open(io.BytesIO(r.content))
+    else:
+        raise RuntimeError(r.text)
+img = get_image_by_id(image_records[0]['id'])
+img_vertical_flipped = vertical_flip(img)
+img_horizontal_flipped = horizontal_flip(img)
+img_clipped = clip_image(img, 200, 200)
+img_normalized = normalize_image(img)
+for record in image_records:
+    image_content = download_image(record['id'])
+    truth_id = record['truth_id']
+​
+    if id_code_mapping[truth_id] == '0':
+        file_path = os.path.join(category0_dir, f"{record['id']}.jpg")
+    else:
+        file_path = os.path.join(category1_dir, f"{record['id']}.jpg")
+​
+    with open(file_path, 'wb') as f:
+        f.write(image_content)
+    img.save(file_path, "PNG")
+category0_train, category0_val, category0_test = split_data(category0_dir)
+category1_train, category1_val, category1_test = split_data(category1_dir)
+png
+img_vertical_flipped.save("path_to_save_vertical_flipped.png")
+img_horizontal_flipped.save("path_to_save_horizontal_flipped.png")
+img_clipped.save("path_to_save_clipped.png")
+
+
+
+
+
+
+def preprocess_and_save_images(image_list, save_dir):
+    for image_path in image_list:
+        img = Image.open(image_path)
+​
+        # Apply your preprocessing steps
+        img_vertical_flipped = vertical_flip(img)
+        img_horizontal_flipped = horizontal_flip(img)
+        img_clipped = clip_image(img, 200, 200)
+        img_normalized = normalize_image(img)
+​
+        # Save the preprocessed images
+        base_name = os.path.basename(image_path).split('.')[0]
+        img_vertical_flipped.save(os.path.join(save_dir, f"{base_name}_vertical_flipped.png"))
+        img_horizontal_flipped.save(os.path.join(save_dir, f"{base_name}_horizontal_flipped.png"))
+        img_clipped.save(os.path.join(save_dir, f"{base_name}_clipped.png"))
+​
+        # If you want to save the normalized image, you'll need to convert it back to a PIL Image
+        img_normalized_pil = Image.fromarray((img_normalized * 255).astype('uint8'))
+        img_normalized_pil.save(os.path.join(save_dir, f"{base_name}_normalized.png"))
+​
+​
+# Get all image paths from each category
+all_category0_images = [os.path.join(category0_dir, fname) for fname in os.listdir(category0_dir)]
+all_category1_images = [os.path.join(category1_dir, fname) for fname in os.listdir(category1_dir)]
+​
+# Preprocess and save images for each category
+preprocess_and_save_images(all_category0_images, category0_dir)
+preprocess_and_save_images(all_category1_images, category1_dir)
+​
+# Split the data into training, validation, and test sets
+category0_train, category0_val, category0_test = split_data(category0_dir)
+category1_train, category1_val, category1_test = split_data(category1_dir)
+​
+---------------------------------------------------------------------------
+UnidentifiedImageError                    Traceback (most recent call last)
+/tmp/ipykernel_94/3528243212.py in <module>
+     25 
+     26 # Preprocess and save images for each category
+---> 27 preprocess_and_save_images(all_category0_images, category0_dir)
+     28 preprocess_and_save_images(all_category1_images, category1_dir)
+     29 
+
+/tmp/ipykernel_94/3528243212.py in preprocess_and_save_images(image_list, save_dir)
+      1 def preprocess_and_save_images(image_list, save_dir):
+      2     for image_path in image_list:
+----> 3         img = Image.open(image_path)
+      4 
+      5         # Apply your preprocessing steps
+
+/opt/conda/lib/python3.7/site-packages/PIL/Image.py in open(fp, mode, formats)
+   3007         warnings.warn(message)
+   3008     raise UnidentifiedImageError(
+-> 3009         "cannot identify image file %r" % (filename if filename else fp)
+   3010     )
+   3011 
+
+UnidentifiedImageError: cannot identify image file './images/Category0/65b78ef7dac0469e8807fbe502e8309a.png'

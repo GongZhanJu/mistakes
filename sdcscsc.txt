@@ -1,0 +1,13 @@
+def move_files(file_list, target_dir):
+    for f in file_list:
+        shutil.move(f, target_dir)
+
+# Move Category0 images
+move_files(category0_train, os.path.join(train_dir, 'Category0'))
+move_files(category0_val, os.path.join(val_dir, 'Category0'))
+move_files(category0_test, os.path.join(test_dir, 'Category0'))
+
+# Move Category1 images
+move_files(category1_train, os.path.join(train_dir, 'Category1'))
+move_files(category1_val, os.path.join(val_dir, 'Category1'))
+move_files(category1_test, os.path.join(test_dir, 'Category1')

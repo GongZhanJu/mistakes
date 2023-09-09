@@ -1,0 +1,24 @@
+---------------------------------------------------------------------------
+UnidentifiedImageError                    Traceback (most recent call last)
+/tmp/ipykernel_15/3528243212.py in <module>
+     25 
+     26 # Preprocess and save images for each category
+---> 27 preprocess_and_save_images(all_category0_images, category0_dir)
+     28 preprocess_and_save_images(all_category1_images, category1_dir)
+     29 
+
+/tmp/ipykernel_15/3528243212.py in preprocess_and_save_images(image_list, save_dir)
+      1 def preprocess_and_save_images(image_list, save_dir):
+      2     for image_path in image_list:
+----> 3         img = Image.open(image_path)
+      4 
+      5         # Apply your preprocessing steps
+
+/opt/conda/lib/python3.7/site-packages/PIL/Image.py in open(fp, mode, formats)
+   3007         warnings.warn(message)
+   3008     raise UnidentifiedImageError(
+-> 3009         "cannot identify image file %r" % (filename if filename else fp)
+   3010     )
+   3011 
+
+UnidentifiedImageError: cannot identify image file './images/Category0/65b78ef7dac0469e8807fbe502e8309a.png'
